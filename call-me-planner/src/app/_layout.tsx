@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useDatabaseStore } from '@/stores/database-store';
+import { useReminderSync } from '@/stores/use-reminder-sync';
 import { useRollover } from '@/stores/use-rollover';
 import { Colors } from '@/ui/theme';
 import { UndoToast } from '@/ui/undo-toast';
@@ -18,6 +19,7 @@ export default function RootLayout() {
   }, [openDatabase]);
 
   useRollover();
+  useReminderSync();
 
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme = {

@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
 import { saveOrder } from '@/data/task-actions';
-import { capacityFor, describeCapacity, reorder, type TaskGroup } from '@/domain/day-view';
+import { capacityFor, describeCapacity } from '@/domain/capacity';
+import { reorder, type TaskGroup } from '@/domain/day-view';
 
 import { ProgressBar } from './progress-bar';
 import { TaskRow } from './task-row';

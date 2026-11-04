@@ -2,17 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Task, Workspace } from '@/data/types';
 
-import {
-  capacityFor,
-  describeCapacity,
-  doneByDay,
-  formatMinutes,
-  groupByWorkspace,
-  reorder,
-  taskTiming,
-  totalCapacity,
-  weekDays,
-} from './day-view';
+import { doneByDay, groupByWorkspace, reorder, taskTiming, weekDays } from './day-view';
 
 function task(p: Partial<Task>): Task {
   return {
@@ -34,6 +24,7 @@ function task(p: Partial<Task>): Task {
     estimateMin: null,
     carryCount: 0,
     snoozeCount: 0,
+    snoozedUntil: null,
     sortOrder: 0,
     completedAt: null,
     ...p,
@@ -72,37 +63,6 @@ describe('groupByWorkspace', () => {
       ['b', ['b1', 'b2']],
       [null, ['x', 'gone']],
     ]);
-  });
-});
-
-describe('capacity', () => {
-  it('adds estimates of open tasks and counts unestimated ones', () => {
-    const c = capacityFor(
-      [
-        task({ estimateMin: 60 }),
-        task({ estimateMin: 90 }),
-        task({ estimateMin: null }),
-        task({ estimateMin: 120, status: 'done' }),
-      ],
-      120,
-    );
-    expect(c).toMatchObject({ plannedMin: 150, capacityMin: 120, unestimated: 1, over: true });
-    expect(describeCapacity(c)).toBe('2 h 30 of 2 h · 1 without estimate');
-  });
-
-  it('totals only workspaces that appear that day', () => {
-    const groups = groupByWorkspace(
-      [task({ workspaceId: 'a', estimateMin: 30 }), task({ workspaceId: null, estimateMin: 15 })],
-      [ws('a', 240), ws('b', 240)],
-    );
-    expect(totalCapacity(groups)).toMatchObject({ plannedMin: 45, capacityMin: 240, over: false });
-  });
-
-  it('formats minutes', () => {
-    expect(formatMinutes(0)).toBe('0 h');
-    expect(formatMinutes(45)).toBe('45 min');
-    expect(formatMinutes(120)).toBe('2 h');
-    expect(formatMinutes(135)).toBe('2 h 15');
   });
 });
 

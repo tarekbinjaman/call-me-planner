@@ -67,6 +67,8 @@ export type Task = BaseEntity & {
   estimateMin: number | null;
   carryCount: number;
   snoozeCount: number;
+  /** Set by Snooze on the ring screen: the reminder ladder pauses until this ISO timestamp. */
+  snoozedUntil: string | null;
   sortOrder: number;
   completedAt: string | null;
 };

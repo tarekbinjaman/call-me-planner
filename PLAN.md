@@ -132,8 +132,8 @@ No account, no internet needed.
 - [x] `rollover.ts`: move unfinished past tasks to today, `carry_count + 1`; safe to run twice
 - [x] Run rollover on app open and when the date changes while the app is open (Today flags moved tasks as "Carried over")
 - [x] Stale task prompt when `carry_count >= 3`: do today / break down / someday / drop (Someday tasks are listed in Inbox)
-- [ ] `capacity.ts`: planned minutes vs budget per workspace per day
-- [ ] `reminderPlanner.ts`: task + policy → list of reminder rows; recalculates on done, snooze, move or time change
+- [x] `capacity.ts`: planned minutes vs budget per workspace per day
+- [x] `reminderPlanner.ts` (`reminder-planner.ts`): task + policy → list of reminder rows; recalculates on done, snooze, move or time change. The `reminder` table is kept in step automatically; 1.7 turns the rows into phone alarms
 
 ### 1.6 Voice notes
 - [ ] Ask for microphone permission with a clear explanation screen

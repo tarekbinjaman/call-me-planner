@@ -56,6 +56,7 @@ export function createRepositories(deps: RepoDeps) {
     | 'estimateMin'
     | 'carryCount'
     | 'snoozeCount'
+    | 'snoozedUntil'
     | 'sortOrder'
     | 'completedAt'
   >(deps, {
@@ -75,6 +76,7 @@ export function createRepositories(deps: RepoDeps) {
       estimateMin: 'number',
       carryCount: 'number',
       snoozeCount: 'number',
+      snoozedUntil: 'text',
       sortOrder: 'number',
       completedAt: 'text',
     },
@@ -92,6 +94,7 @@ export function createRepositories(deps: RepoDeps) {
       estimateMin: null,
       carryCount: 0,
       snoozeCount: 0,
+      snoozedUntil: null,
       sortOrder: 0,
       completedAt: null,
     },

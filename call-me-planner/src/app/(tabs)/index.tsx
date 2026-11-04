@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { quickAddForDay } from '@/data/task-actions';
 import { parseLocalDate } from '@/domain/dates';
-import { describeCapacity, groupByWorkspace, taskTiming, totalCapacity } from '@/domain/day-view';
+import { describeCapacity, totalCapacity } from '@/domain/capacity';
+import { groupByWorkspace, taskTiming } from '@/domain/day-view';
 import { isStale } from '@/domain/stale';
 import { useLiveQuery } from '@/stores/use-live-query';
 import { useNow, useToday } from '@/stores/use-today';

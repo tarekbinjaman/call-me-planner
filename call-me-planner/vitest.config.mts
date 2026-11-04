@@ -11,5 +11,8 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    // One worker per CPU core runs this 8 GB laptop out of memory while Metro is running;
+    // the tests are small, so two workers are just as fast.
+    maxWorkers: 2,
   },
 });

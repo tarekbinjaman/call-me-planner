@@ -156,6 +156,12 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX daily_note_date ON daily_note (date);
     `,
   },
+  {
+    version: 3,
+    name: 'task snoozed_until',
+    // When a ring is snoozed, the reminder ladder pauses until this time (ISO timestamp).
+    sql: `ALTER TABLE task ADD COLUMN snoozed_until TEXT;`,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS.reduce((max, m) => Math.max(max, m.version), 0);
