@@ -19,6 +19,10 @@ export const Colors = {
     wsPersonal: '#7C4DDB',
     wsCompanyA: '#2563EB',
     wsCompanyB: '#B7791F',
+    wsTeal: '#0E7C86',
+    wsRose: '#C0365A',
+    wsSlate: '#4B5D73',
+    onAccent: '#FFFFFF',
   },
   dark: {
     background: '#0F1614',
@@ -34,8 +38,22 @@ export const Colors = {
     wsPersonal: '#A98BF0',
     wsCompanyA: '#6EA0FF',
     wsCompanyB: '#E0AE5A',
+    wsTeal: '#4CC3CC',
+    wsRose: '#F07A98',
+    wsSlate: '#9AAAC0',
+    onAccent: '#04140F',
   },
 } as const;
+
+/** Colors a workspace can use, in picker order. */
+export const WORKSPACE_COLORS = [
+  'wsPersonal',
+  'wsCompanyA',
+  'wsCompanyB',
+  'wsTeal',
+  'wsRose',
+  'wsSlate',
+] as const;
 
 export type ColorScheme = keyof typeof Colors;
 export type ThemeColors = { [K in keyof typeof Colors.light]: string };

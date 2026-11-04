@@ -57,12 +57,12 @@ to match. Both apps are built from the same Expo codebase.
 
 | # | Decision | Options | Affects |
 |---|----------|---------|---------|
-| D1 | Which phone do you use? | Android / iPhone (iOS 26+) / iPhone (older) | Ring screen in Phase 1. Older iPhones only get a 30 s notification sound until the Phase 2 phone call. |
+| D1 | Which phone do you use? | **Decided: Android 12** | Ring screen in Phase 1. Older iPhones only get a 30 s notification sound until the Phase 2 phone call. |
 | D2 | Does a company pay you by the hour? | Yes / No | If yes, move the time tracker from Phase 4 into Phase 2. |
 | D3 | Do you want the buddy text feature? | Yes / No / Later | Phase 4 scope |
 | D4 | App name and bundle id | e.g. `com.yourname.callmeplanner` | Needed for store builds in Phase 0 |
-| D5 | Default reminder ladder timings | Default: −15, 0, +10, +20, +40 min | Phase 1 reminder policy seed |
-| D6 | Quiet hours | Default: 22:00–07:00 | Phase 1 |
+| D5 | Default reminder ladder timings | **Decided: −15, 0, +10, +20, +40 min** | Phase 1 reminder policy seed |
+| D6 | Quiet hours | **Decided: 22:00–07:00** | Phase 1 |
 
 ---
 
@@ -73,14 +73,14 @@ to match. Both apps are built from the same Expo codebase.
 ### Tooling
 - [x] Node and Git installed
 - [ ] Android Studio (Android emulator) and/or Xcode (iPhone simulator, needs a Mac) — optional, a real phone with Expo Go is enough for now
-- [ ] Create an Expo account, then `npx eas-cli@latest login` and `npx eas-cli@latest init` (the CLI itself works via npx)
+- [x] Create an Expo account, then `npx eas-cli@latest login` and `npx eas-cli@latest init` (the CLI itself works via npx)
 - [x] Create the app on Expo SDK 58 with TypeScript 6 and `expo-router`
 - [ ] Run it in the store version of Expo Go on your phone (`npm start`, scan the QR code)
 - [x] Set up EAS and a dev build profile (needed from step 1.7, because native alarm code doesn't run in Expo Go)
 - [x] Set up ESLint, Prettier and strict TypeScript
 - [x] Set up Vitest for `src/domain` and Maestro for phone end-to-end tests
 - [x] GitHub Actions workflow: typecheck, lint, unit tests, formatting, expo-doctor (`.github/workflows/ci.yml`)
-- [ ] Create the GitHub repo and push, so CI runs
+- [x] Create the GitHub repo and push, so CI runs
 
 ### Skeleton
 - [x] Create the folder structure (`app/`, `src/domain`, `src/data`, `src/stores`, `src/device`, `src/ui`, `modules/`, `supabase/`)
@@ -99,32 +99,34 @@ to match. Both apps are built from the same Expo codebase.
 No account, no internet needed.
 
 ### 1.1 Data layer
-- [ ] SQL `CREATE TABLE` migration for: `workspace`, `plan`, `task`, `recording`, `reminder_policy`, `reminder`, `reminder_event`, `daily_note`, `settings`
-- [ ] Common columns on every table: `id` (UUID made on device), `created_at`, `updated_at`, `deleted_at` (soft delete)
-- [ ] Indexes for the hot queries: `task(scheduled_date, status)`, `task(workspace_id)`, `reminder(fire_at, status)`
-- [ ] Typed repository helpers per table: `getAll()`, `getById()`, `insert()`, `update()`, `softDelete()`
-- [ ] `zustand` stores per screen area (tasks, workspaces, plans, settings) that reload on `addDatabaseChangeListener`
-- [ ] Seed on first launch: Personal, Company A, Company B workspaces with colors and a default reminder policy
+- [x] SQL `CREATE TABLE` migration for: `workspace`, `plan`, `task`, `recording`, `reminder_policy`, `reminder`, `reminder_event`, `daily_note`, `settings`
+- [x] Common columns on every table: `id` (UUID made on device), `created_at`, `updated_at`, `deleted_at` (soft delete)
+- [x] Indexes for the hot queries: `task(scheduled_date, status)`, `task(workspace_id)`, `reminder(fire_at, status)`
+- [x] Typed repository helpers per table: `getAll()`, `getById()`, `insert()`, `update()`, `softDelete()`
+- [x] `zustand` list-store factory that reloads on `addDatabaseChangeListener`; workspaces store done (task and plan stores are added with their screens in 1.2–1.4)
+- [x] Seed on first launch: Personal, Company A, Company B workspaces with colors and a default reminder policy
 
 ### 1.2 Workspaces and plans
-- [ ] Workspace screen: name, color, daily hour budget, working hours
-- [ ] Plan list per workspace with status (active / paused / done) and target date
-- [ ] Plan screen: tasks in the plan and a progress bar ("7 of 12 done")
+- [x] Workspace screen: name, color, daily hour budget, working hours
+- [x] Plan list per workspace with status (active / paused / done) and target date
+- [x] Plan screen: tasks in the plan and a progress bar ("7 of 12 done")
 
 ### 1.3 Tasks
-- [ ] Quick add bar (title only → goes to Inbox)
-- [ ] Full task form (`react-hook-form` + `zod`): workspace, plan, scheduled date, due time, priority, estimate, must-do, critical, notes
-- [ ] Subtasks (one level)
-- [ ] Mark done / doing / dropped, with undo
-- [ ] Drag to reorder within a day
-- [ ] Move a task to another day or workspace
+- [x] Quick add bar (title only → goes to Inbox)
+- [x] Full task form (`react-hook-form` + `zod`): workspace, plan, scheduled date, due time, priority, estimate, must-do, critical, notes
+- [x] Subtasks (one level)
+- [x] Mark done / doing / dropped, with undo
+- [x] Reorder within a day: Reorder mode with move up / move down buttons on Today and Tomorrow
+- [ ] Long-press drag to reorder (later polish)
+- [x] Move a task to another day or workspace
 
 ### 1.4 Screens
-- [ ] **Today:** tasks with `scheduled_date <= today` and not done, grouped by workspace, overdue flagged
-- [ ] Capacity bar per workspace ("Company A: 5 h of 4 h planned")
-- [ ] **Tomorrow:** tasks for tomorrow, drag tasks in from Today or Inbox
-- [ ] **Inbox:** tasks with no workspace; swipe to assign a workspace and date
-- [ ] **Review:** tasks done today and this week, by workspace, with a `victory-native` bar chart of done tasks per day
+- [x] **Today:** tasks with `scheduled_date <= today` and not done, grouped by workspace, overdue flagged
+- [x] Capacity bar per workspace ("Company A: 5 h of 4 h planned")
+- [x] **Tomorrow:** tasks for tomorrow; a "Move into tomorrow" list pulls in today's leftovers and Inbox ideas with one tap
+- [x] **Inbox:** tasks with no workspace (assign a workspace and day from the task page)
+- [ ] Inbox swipe gestures to assign faster (later polish)
+- [x] **Review:** tasks done today and this week, by workspace, with a bar chart of done tasks per day (plain views; `victory-native` needs Skia, which is extra setup on web)
 
 ### 1.5 Domain logic (pure TypeScript, unit tested)
 - [ ] `rollover.ts`: move unfinished past tasks to today, `carry_count + 1`; safe to run twice

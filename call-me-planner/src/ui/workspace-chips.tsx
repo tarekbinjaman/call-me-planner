@@ -1,34 +1,59 @@
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { useWorkspaces } from '@/stores/workspaces';
 
 import { Text } from './text';
-import { Radius, Spacing, type ThemeColor } from './theme';
+import { Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
+import { useWorkspaceColor } from './workspace-color';
 
-const WORKSPACES: { name: string; color: ThemeColor }[] = [
-  { name: 'Personal', color: 'wsPersonal' },
-  { name: 'Company A', color: 'wsCompanyA' },
-  { name: 'Company B', color: 'wsCompanyB' },
-];
+function formatHours(minutes: number) {
+  const h = minutes / 60;
+  return Number.isInteger(h) ? `${h} h` : `${h.toFixed(1)} h`;
+}
 
-/** The three workspace colors. Real workspaces come from the database in Phase 1. */
+/** Your workspaces, read from the local database, with each one's daily hour budget. */
 export function WorkspaceChips() {
   const theme = useTheme();
+  const workspaces = useWorkspaces((s) => s.items);
+  const colorOf = useWorkspaceColor();
+
   return (
-    <View style={styles.row}>
-      {WORKSPACES.map((ws) => (
-        <View
-          key={ws.name}
-          style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={[styles.dot, { backgroundColor: theme[ws.color] }]} />
+    <View style={styles.row} testID="workspace-chips">
+      {workspaces.map((ws) => (
+        <Pressable
+          key={ws.id}
+          accessibilityRole="link"
+          accessibilityLabel={`${ws.name}, ${formatHours(ws.dailyCapacityMin)} a day. Open workspace`}
+          onPress={() => router.push({ pathname: '/workspace/[id]', params: { id: ws.id } })}
+          style={({ pressed }) => [
+            styles.chip,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            pressed && styles.pressed,
+          ]}>
+          <View style={[styles.dot, { backgroundColor: colorOf(ws.color) }]} />
           <Text variant="small">{ws.name}</Text>
-        </View>
+          <Text variant="small" color="textMuted">
+            {formatHours(ws.dailyCapacityMin)}
+          </Text>
+        </Pressable>
       ))}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/workspace/edit')}
+        style={({ pressed }) => [styles.chip, { borderColor: theme.border }, pressed && styles.pressed]}>
+        <Text variant="small" color="accent">
+          + Workspace
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  pressed: { opacity: 0.7 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

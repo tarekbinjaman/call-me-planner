@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-import { openDatabase } from '@/data/db';
+import { initData } from '@/data';
+
+import { reloadAllStores } from './create-list-store';
 
 type DatabaseState =
   | { status: 'opening' }
@@ -17,8 +19,9 @@ export const useDatabaseStore = create<DatabaseStore>((set) => ({
   open: async () => {
     set({ state: { status: 'opening' } });
     try {
-      const { migration } = await openDatabase();
+      const { migration } = await initData();
       set({ state: { status: 'ready', version: migration.to, applied: migration.applied } });
+      await reloadAllStores();
     } catch (error) {
       set({ state: { status: 'error', message: error instanceof Error ? error.message : String(error) } });
     }
