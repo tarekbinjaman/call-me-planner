@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { quickAddForDay } from '@/data/task-actions';
 import { parseLocalDate } from '@/domain/dates';
 import { describeCapacity, groupByWorkspace, taskTiming, totalCapacity } from '@/domain/day-view';
+import { isStale } from '@/domain/stale';
 import { useLiveQuery } from '@/stores/use-live-query';
 import { useNow, useToday } from '@/stores/use-today';
 import { useWorkspaces } from '@/stores/workspaces';
@@ -14,6 +15,7 @@ import { DayGroups } from '@/ui/day-groups';
 import { EmptyState } from '@/ui/empty-state';
 import { QuickAdd } from '@/ui/quick-add';
 import { Screen } from '@/ui/screen';
+import { StaleTasks } from '@/ui/stale-tasks';
 import { TaskRow } from '@/ui/task-row';
 import { Text } from '@/ui/text';
 import { Spacing } from '@/ui/theme';
@@ -60,6 +62,8 @@ export default function TodayScreen() {
           </Text>
         </Card>
       ) : null}
+
+      <StaleTasks tasks={open.filter(isStale)} />
 
       <QuickAdd
         placeholder="Add a task for today"

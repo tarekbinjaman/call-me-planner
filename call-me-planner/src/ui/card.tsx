@@ -10,17 +10,25 @@ export function Card({
   onPress,
   accessibilityLabel,
   style,
+  testID,
 }: {
   children: ReactNode;
   onPress?: () => void;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }) {
   const theme = useTheme();
   const base = [styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, style];
-  if (!onPress) return <View style={base}>{children}</View>;
+  if (!onPress)
+    return (
+      <View style={base} testID={testID}>
+        {children}
+      </View>
+    );
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}

@@ -104,6 +104,17 @@ describe('repository basics (tasks)', () => {
 });
 
 describe('task queries', () => {
+  it('someday returns open top-level tasks with a workspace and no day', async () => {
+    const { repos } = await setup();
+    const ws = await repos.workspaces.insert({ name: 'Company A', kind: 'company', color: 'wsCompanyA' });
+    const someday = await repos.tasks.insert({ title: 'Learn Kotlin', workspaceId: ws.id });
+    await repos.tasks.insert({ title: 'Inbox idea' });
+    await repos.tasks.insert({ title: 'Planned', workspaceId: ws.id, scheduledDate: '2026-11-04' });
+    await repos.tasks.insert({ title: 'Closed', workspaceId: ws.id, status: 'dropped' });
+    await repos.tasks.insert({ title: 'Step', workspaceId: ws.id, parentId: someday.id });
+    expect((await repos.tasks.someday()).map((t) => t.title)).toEqual(['Learn Kotlin']);
+  });
+
   it('forDay returns open tasks scheduled today or earlier', async () => {
     const { repos } = await setup();
     await repos.tasks.insert({ title: 'Yesterday open', scheduledDate: '2026-11-03' });

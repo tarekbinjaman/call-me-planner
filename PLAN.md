@@ -131,7 +131,7 @@ No account, no internet needed.
 ### 1.5 Domain logic (pure TypeScript, unit tested)
 - [x] `rollover.ts`: move unfinished past tasks to today, `carry_count + 1`; safe to run twice
 - [x] Run rollover on app open and when the date changes while the app is open (Today flags moved tasks as "Carried over")
-- [ ] Stale task prompt when `carry_count >= 3`: do today / break down / someday / drop
+- [x] Stale task prompt when `carry_count >= 3`: do today / break down / someday / drop (Someday tasks are listed in Inbox)
 - [ ] `capacity.ts`: planned minutes vs budget per workspace per day
 - [ ] `reminderPlanner.ts`: task + policy → list of reminder rows; recalculates on done, snooze, move or time change
 

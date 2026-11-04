@@ -1,3 +1,4 @@
+import { STALE_CHOICES, stalePatch, type StaleChoice } from '@/domain/stale';
 import { moveToDayPatch, moveToWorkspacePatch, statusPatch, type TaskPatch } from '@/domain/tasks';
 import { useUndo } from '@/stores/undo';
 
@@ -34,6 +35,12 @@ export function setTaskStatus(task: Task, status: TaskStatus) {
 
 export function toggleTaskDone(task: Task) {
   return setTaskStatus(task, task.status === 'done' ? 'todo' : 'done');
+}
+
+/** Answer to the stale-task prompt on Today (Break down also opens the task, from the screen). */
+export function answerStaleTask(task: Task, choice: StaleChoice) {
+  const message = STALE_CHOICES.find((c) => c.value === choice)?.message ?? 'Updated';
+  return patchWithUndo(task, stalePatch(choice), message);
 }
 
 export function moveTaskToDay(task: Task, day: string | null, label: string) {

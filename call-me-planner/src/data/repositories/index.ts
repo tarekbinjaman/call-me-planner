@@ -186,6 +186,14 @@ export function createRepositories(deps: RepoDeps) {
           orderBy: 'created_at DESC',
         });
       },
+      /** Open top-level tasks that have a workspace but no day ("Someday"), by workspace. */
+      someday() {
+        return tasks.getAll({
+          where:
+            "parent_id IS NULL AND workspace_id IS NOT NULL AND scheduled_date IS NULL AND status IN ('todo', 'doing')",
+          orderBy: 'workspace_id, sort_order, created_at',
+        });
+      },
       /** Top-level tasks finished at or after `sinceIso`, newest first (Review). */
       doneSince(sinceIso: string) {
         return tasks.getAll({

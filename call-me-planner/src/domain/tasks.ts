@@ -64,7 +64,18 @@ export function describeDay(date: string, today: Date = new Date()): string {
 // ---------- Status and moving ----------
 
 export type TaskPatch = Partial<
-  Pick<Task, 'status' | 'completedAt' | 'scheduledDate' | 'dueAt' | 'workspaceId' | 'planId'>
+  Pick<
+    Task,
+    | 'status'
+    | 'completedAt'
+    | 'scheduledDate'
+    | 'dueAt'
+    | 'workspaceId'
+    | 'planId'
+    | 'carryCount'
+    | 'mustDo'
+    | 'critical'
+  >
 >;
 
 /** Patch for a status change; keeps completedAt in step with "done". */
