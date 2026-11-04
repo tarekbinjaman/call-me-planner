@@ -1,0 +1,4 @@
+# Keep LF line endings everywhere so Prettier checks pass on Windows and in CI.
+* text=auto eol=lf
+*.png binary
+*.jpg binary

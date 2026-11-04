@@ -1,0 +1,14 @@
+# Phase 0 smoke test: the app opens, the four tabs exist, and the local database is ready.
+# Run on a phone or emulator with the app installed:  maestro test .maestro/smoke.yaml
+appId: com.callmeplanner.app
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Today'
+- assertVisible: 'Database ready · schema v1'
+- tapOn: 'Tomorrow'
+- assertVisible: 'Tomorrow is empty'
+- tapOn: 'Inbox'
+- assertVisible: 'Inbox is clear'
+- tapOn: 'Review'
+- assertVisible: 'Nothing finished yet'

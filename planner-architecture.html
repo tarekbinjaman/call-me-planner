@@ -1,0 +1,754 @@
+<title>Call-Me Planner Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column (~860px) with wide tables/diagrams scrolling inside their own boxes; the escalation ladder is the visual centrepiece. */
+:root{
+  --bg:#F5F7F6;
+  --surface:#FFFFFF;
+  --fg:#14201D;
+  --muted:#5A6B66;
+  --line:#D9E1DE;
+  --accent:#0F7B5F;        /* "answer call" green */
+  --accent-soft:#E2F2EC;
+  --alert:#C2410C;         /* "missed call" orange-red */
+  --alert-soft:#FBE9E1;
+  --ws-personal:#7C4DDB;
+  --ws-a:#2563EB;
+  --ws-b:#B7791F;
+  --code-bg:#EEF2F0;
+  --font-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1614; --surface:#16201D; --fg:#E4ECE9; --muted:#97A8A2; --line:#2A3833;
+    --accent:#3CC79A; --accent-soft:#163A2F; --alert:#F08A5D; --alert-soft:#3A2219;
+    --ws-personal:#A98BF0; --ws-a:#6EA0FF; --ws-b:#E0AE5A; --code-bg:#1C2824;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1614; --surface:#16201D; --fg:#E4ECE9; --muted:#97A8A2; --line:#2A3833;
+  --accent:#3CC79A; --accent-soft:#163A2F; --alert:#F08A5D; --alert-soft:#3A2219;
+  --ws-personal:#A98BF0; --ws-a:#6EA0FF; --ws-b:#E0AE5A; --code-bg:#1C2824;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:var(--font-body); font-size:16.5px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap{max-width:880px; margin:0 auto; padding-block:48px 96px; display:flex; flex-direction:column; gap:56px}
+h1,h2,h3{font-family:var(--font-display); line-height:1.15; text-wrap:balance; margin:0}
+h1{font-size:clamp(2rem, 5vw, 2.9rem); font-weight:700; letter-spacing:-0.02em}
+h2{font-size:1.6rem; font-weight:700; letter-spacing:-0.01em}
+h3{font-size:1.15rem; font-weight:700}
+p{margin:0; max-width:68ch}
+section{display:flex; flex-direction:column; gap:18px}
+.eyebrow{font-family:var(--font-mono); font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.lede{font-size:1.15rem; color:var(--muted)}
+code,.mono{font-family:var(--font-mono); font-size:.86em}
+code{background:var(--code-bg); padding:.1em .35em; border-radius:4px}
+a{color:var(--accent)}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{font-size:.85rem; border:1px solid var(--line); background:var(--surface); padding:4px 10px; border-radius:999px; color:var(--muted)}
+.chip b{color:var(--fg)}
+.dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle}
+.ws-p{background:var(--ws-personal)} .ws-a{background:var(--ws-a)} .ws-b{background:var(--ws-b)}
+
+/* Ladder */
+.ladder{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface)}
+.ladder li{padding:16px 14px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:6px; min-width:0}
+.ladder li:last-child{border-right:0}
+.ladder .t{font-family:var(--font-mono); font-weight:600; font-size:.95rem}
+.ladder .ch{font-family:var(--font-display); font-weight:700; font-size:1.02rem; line-height:1.2}
+.ladder .d{font-size:.88rem; color:var(--muted)}
+.ladder .tag{font-family:var(--font-mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; align-self:flex-start; padding:2px 7px; border-radius:4px; margin-top:auto}
+.tag.dev{background:var(--accent-soft); color:var(--accent)}
+.tag.srv{background:var(--alert-soft); color:var(--alert)}
+.ladder li.hot{background:var(--alert-soft)}
+.ladder li.hot .t{color:var(--alert)}
+.meter{height:6px; display:grid; grid-template-columns:repeat(5,1fr); border-radius:999px; overflow:hidden; margin-top:-8px}
+.meter span:nth-child(1){background:color-mix(in srgb, var(--accent) 35%, transparent)}
+.meter span:nth-child(2){background:color-mix(in srgb, var(--accent) 70%, transparent)}
+.meter span:nth-child(3){background:color-mix(in srgb, var(--alert) 55%, transparent)}
+.meter span:nth-child(4){background:var(--alert)}
+.meter span:nth-child(5){background:color-mix(in srgb, var(--alert) 70%, var(--fg))}
+@media (max-width:720px){
+  .ladder{grid-template-columns:1fr}
+  .ladder li{border-right:0; border-bottom:1px solid var(--line)}
+  .ladder li:last-child{border-bottom:0}
+  .meter{display:none}
+}
+
+/* Ring screen mock */
+.ringrow{display:grid; grid-template-columns:260px minmax(0,1fr); gap:28px; align-items:start}
+@media (max-width:720px){.ringrow{grid-template-columns:1fr} .phone{margin:0 auto}}
+.phone{width:260px; max-width:100%; border-radius:34px; padding:26px 20px 22px; background:#0E1A17; color:#EAF3F0; display:flex; flex-direction:column; gap:14px; border:6px solid #25332F}
+.phone .who{font-family:var(--font-mono); font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:#8FB3A8; text-align:center}
+.phone .task{font-family:var(--font-display); font-size:1.35rem; font-weight:700; text-align:center; line-height:1.2}
+.phone .meta{font-size:.8rem; color:#9DB5AE; text-align:center}
+.phone .wsb{display:inline-flex; align-items:center; gap:6px; align-self:center; font-size:.75rem; padding:3px 10px; border-radius:999px; background:#1B2C27}
+.phone .wsb i{width:8px; height:8px; border-radius:50%; background:#6EA0FF}
+.wave{display:flex; align-items:center; gap:3px; height:38px; justify-content:center; background:#16251F; border-radius:12px; padding:0 12px}
+.wave span{width:3px; border-radius:2px; background:#3CC79A}
+.wave em{font-style:normal; font-family:var(--font-mono); font-size:.72rem; color:#8FB3A8; margin-left:8px}
+.phone .btns{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.phone .btns span{font-size:.8rem; text-align:center; padding:9px 4px; border-radius:12px; background:#1F302B}
+.phone .btns span.ok{grid-column:1 / -1; background:#1F9D74; color:#04140F; font-weight:700; font-size:.95rem; padding:12px}
+.note{font-size:.88rem; color:var(--muted)}
+
+/* Tables */
+.tbl{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.92rem; min-width:620px}
+th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; background:var(--code-bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700}
+.yes{color:var(--accent); font-weight:700}
+.no{color:var(--alert); font-weight:700}
+.part{color:var(--ws-b); font-weight:700}
+
+/* Diagrams */
+.diagram{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); padding:18px}
+pre.mermaid{margin:0; background:transparent; font-family:var(--font-body); text-align:center}
+.caption{font-size:.85rem; color:var(--muted)}
+
+/* Code */
+pre.code{margin:0; overflow-x:auto; background:var(--code-bg); border-radius:10px; padding:16px 18px; font-family:var(--font-mono); font-size:.82rem; line-height:1.55; border:1px solid var(--line)}
+
+/* Feature groups */
+.groups{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px}
+@media (max-width:720px){.groups{grid-template-columns:1fr}}
+.group{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:10px; min-width:0}
+.group ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:7px; font-size:.94rem}
+.group li b{font-weight:700}
+.ph{font-family:var(--font-mono); font-size:.68rem; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:0 5px; margin-left:4px; white-space:nowrap}
+
+/* Lists */
+.plain{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px; max-width:72ch}
+.cols2{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px}
+@media (max-width:720px){.cols2{grid-template-columns:1fr}}
+.box{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:10px; min-width:0}
+.risk{border-left:3px solid var(--alert)}
+.phases{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px}
+@media (max-width:820px){.phases{grid-template-columns:repeat(2, minmax(0,1fr))}}
+@media (max-width:480px){.phases{grid-template-columns:1fr}}
+.phase{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.phase ul{margin:0; padding-left:16px; font-size:.88rem; display:flex; flex-direction:column; gap:5px}
+.phase .n{font-family:var(--font-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent)}
+hr{border:0; border-top:1px solid var(--line); margin:0}
+</style>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:16px">
+  <div class="eyebrow">System architecture · v1 · 4 Nov 2026</div>
+  <h1>Call-Me Planner</h1>
+  <p class="lede">A personal planner for one person with three areas of work. It saves tasks for today and tomorrow, groups them by company and plan, and refuses to let you forget. If a must-do task is still open after its time, the app rings like an incoming call and plays a voice note you recorded for yourself.</p>
+  <div class="chips">
+    <span class="chip"><span class="dot ws-p"></span><b>Personal</b></span>
+    <span class="chip"><span class="dot ws-a"></span><b>Company A</b></span>
+    <span class="chip"><span class="dot ws-b"></span><b>Company B</b></span>
+    <span class="chip">Single user</span>
+    <span class="chip">Phone app + browser app</span>
+    <span class="chip">Works offline</span>
+  </div>
+</header>
+
+<section>
+  <div class="eyebrow">The signature feature</div>
+  <h2>The escalation ladder</h2>
+  <p>Every task marked <b>Must do</b> gets a reminder ladder. Each step is louder than the last, and the ladder stops the moment the task is done, snoozed or moved on any device. Normal tasks get only the first two steps, so you don't get alarm fatigue.</p>
+  <ol class="ladder">
+    <li>
+      <span class="t">T − 15 min</span>
+      <span class="ch">Heads-up</span>
+      <span class="d">Quiet notification: "Send invoice in 15 min".</span>
+      <span class="tag dev">Phone, offline</span>
+    </li>
+    <li>
+      <span class="t">T 0</span>
+      <span class="ch">Voice alert</span>
+      <span class="d">Notification with your recording attached. Tap to hear it.</span>
+      <span class="tag dev">Phone, offline</span>
+    </li>
+    <li class="hot">
+      <span class="t">T + 10 min</span>
+      <span class="ch">Ring screen</span>
+      <span class="d">Full-screen "incoming call" with a looping ringtone. Answer and your recording plays.</span>
+      <span class="tag dev">Phone, offline</span>
+    </li>
+    <li class="hot">
+      <span class="t">T + 20 min</span>
+      <span class="ch">Real phone call</span>
+      <span class="d">The server calls your actual number and plays your recording. Press 1 = done, 2 = snooze, 3 = tomorrow.</span>
+      <span class="tag srv">Server, Twilio</span>
+    </li>
+    <li class="hot">
+      <span class="t">T + 40 min</span>
+      <span class="ch">Buddy nudge</span>
+      <span class="d">Optional. One SMS to a friend you chose: "Your friend hasn't finished a must-do task yet."</span>
+      <span class="tag srv">Server, opt-in</span>
+    </li>
+  </ol>
+  <div class="meter" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  <p class="note">The timings are defaults. Each workspace has its own policy (Company A can ring sooner than Personal), and any task can override it. Phone calls and buddy texts never happen during quiet hours unless the task is marked <b>critical</b>.</p>
+
+  <div class="ringrow">
+    <div class="phone" role="img" aria-label="Mock of the ring screen showing a Company A task with a voice recording and Done, Snooze and Tomorrow buttons">
+      <div class="who">Incoming reminder</div>
+      <div class="wsb"><i></i>Company A · Must do</div>
+      <div class="task">Send March invoice to client</div>
+      <div class="meta">Was due 10:00 · now 10:10 · snoozed 0 / 3</div>
+      <div class="wave" aria-hidden="true">
+        <span style="height:10px"></span><span style="height:22px"></span><span style="height:14px"></span><span style="height:28px"></span><span style="height:18px"></span><span style="height:9px"></span><span style="height:24px"></span><span style="height:16px"></span><span style="height:30px"></span><span style="height:12px"></span><span style="height:20px"></span><span style="height:8px"></span>
+        <em>▶ 0:12 your voice</em>
+      </div>
+      <div class="btns">
+        <span class="ok">Done</span>
+        <span>Snooze 10 min</span>
+        <span>Move to tomorrow</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <h3>What "answering" does</h3>
+      <ul class="plain">
+        <li>Picking up stops the ringtone, opens the app's call screen and plays your recording on the speaker.</li>
+        <li>Three big buttons: <b>Done</b>, <b>Snooze</b>, <b>Move to tomorrow</b>. Ignoring the call counts as a missed ring, and the ladder moves on.</li>
+        <li><b>Snooze limit:</b> after 3 snoozes the button disappears, so the task has to be done, moved or dropped.</li>
+        <li>Recordings are capped at 60 seconds, compressed AAC mono (about 15 KB per 10 s), stored on the phone and in a private cloud bucket so the phone-call step can play them.</li>
+        <li>If you didn't record anything, a text-to-speech voice reads the task title instead.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Platform decision</div>
+  <h2>Why this must be a native phone app</h2>
+  <p>A web app (PWA) can't ring like a call. The browser can't wake up at an exact time, can't show a full-screen alert and can't break through silent mode. The ring screen needs native phone APIs, so the main client is a React Native app built with Expo. The same codebase also builds a browser app with full control: tasks, plans, reminder rules, settings and voice notes. Every change made there reaches the phone, which re-plans its alarms. The browser itself never rings.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Capability</th><th>Android app</th><th>iPhone app</th><th>Web / laptop</th></tr></thead>
+      <tbody>
+        <tr><td>Alert at an exact time, app closed, no internet</td><td class="yes">Yes · exact alarm</td><td class="yes">Yes · local notification</td><td class="no">No</td></tr>
+        <tr><td>Full-screen ring with looping tone</td><td class="yes">Yes · full-screen intent on an alarm channel</td><td class="part">iOS 26+ via AlarmKit · older: 30 s notification sound</td><td class="no">No</td></tr>
+        <tr><td>Rings through silent / Do Not Disturb</td><td class="yes">Yes · alarm stream</td><td class="part">AlarmKit only</td><td class="no">No</td></tr>
+        <tr><td>Play my recording on answer</td><td class="yes">Yes</td><td class="yes">Yes, when opened</td><td class="part">Only after a click</td></tr>
+        <tr><td>Real phone call (T + 20)</td><td class="yes" colspan="3" style="font-weight:400;color:var(--fg)">Works on every phone, because Twilio places a normal call to your number from the server.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">The iPhone gap is why the real phone call step exists. Apple only allows its call screen (CallKit) for real voice calls and rejects apps that fake one, so on iOS the strongest in-app ring is an AlarmKit alarm, followed by a genuine call from Twilio.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Level 1 · system context</div>
+  <h2>The whole system</h2>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  You(("You"))
+  Phone["Phone app - iOS and Android"]
+  Web["Browser app - full control"]
+  Widget["Home and lock screen widgets"]
+  Supa[("Supabase - Auth, Postgres, Storage, Realtime")]
+  Edge["Edge Functions - escalation worker, webhooks, AI parse"]
+  Push["Expo Push - APNs and FCM"]
+  Twilio["Twilio - Voice and SMS"]
+  AI["Claude API - turns speech into a task"]
+  GCal["Google Calendar - read only"]
+  Buddy(("Buddy - optional"))
+
+  You --> Phone
+  You --> Web
+  You --> Widget
+  Widget --> Phone
+  Phone -- "sync + recordings" --> Supa
+  Web -- "sync" --> Supa
+  Supa --> Edge
+  Edge -- "re-plan alarms, digests" --> Push
+  Push --> Phone
+  Edge -- "place call, send SMS" --> Twilio
+  Twilio -- "rings your number" --> You
+  Twilio -- "keypress webhooks" --> Edge
+  Twilio -. "nudge SMS" .-> Buddy
+  Edge -- "parse request" --> AI
+  Edge -- "meetings" --> GCal
+</pre>
+  </div>
+  <p class="caption">The phone does every reminder step that can run offline. The server only does what needs a server: real phone calls, SMS, cross-device cancels, AI parsing and calendar sync.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Level 2 · inside the phone app</div>
+  <h2>App layers</h2>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph UI["Screens"]
+    direction LR
+    S1["Today"] --- S2["Tomorrow"] --- S3["Inbox"] --- S4["Workspace"] --- S5["Plan"] --- S6["Ring screen"] --- S7["Review"]
+  end
+  subgraph DOM["Domain logic - pure TypeScript, unit tested"]
+    direction LR
+    D1["Rollover"] --- D2["Recurrence"] --- D3["Capacity"] --- D4["Reminder planner"] --- D5["What now? picker"] --- D6["Reports"]
+  end
+  subgraph DATA["Data"]
+    direction LR
+    ST["Zustand stores"] --> R["Repositories"]
+    R --> DB[("expo-sqlite on device")]
+    DB -. "change listener" .-> ST
+    R --> OB["Outbox"]
+    OB --> SY["Sync engine"]
+  end
+  subgraph DEV["Device services"]
+    direction LR
+    A1["Alarm scheduler"] --- A2["Audio record and play"] --- A3["Speech to text"] --- A4["Geofence"] --- A5["Widgets"]
+  end
+  UI --> DOM
+  UI --> DATA
+  DOM --> DATA
+  DOM --> DEV
+  SY -- "HTTPS + Realtime" --> CLOUD[("Supabase")]
+</pre>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Module</th><th>Job</th></tr></thead>
+      <tbody>
+        <tr><td>Rollover</td><td>Once a day (on app open or at local midnight) moves unfinished tasks with <code>scheduled_date &lt; today</code> to today and adds 1 to <code>carry_count</code>. Safe to run twice: the condition is false the second time.</td></tr>
+        <tr><td>Recurrence</td><td>Expands repeat rules (daily standup, monthly invoice) into real tasks 14 days ahead. Task ids are a hash of <code>rule_id + date</code>, so two devices never create duplicates.</td></tr>
+        <tr><td>Capacity</td><td>Adds up estimates per workspace for a day and compares them with that workspace's daily hour budget. Shows "11 h planned, 8 h available".</td></tr>
+        <tr><td>Reminder planner</td><td>Turns a task + its reminder policy into concrete reminder rows, hands the phone-side steps to the alarm scheduler, and recalculates everything on done, snooze or move.</td></tr>
+        <tr><td>What now? picker</td><td>One button that picks the single next task: overdue must-dos first, then due today, then by priority, limited to the workspace whose working hours you're in.</td></tr>
+        <tr><td>Alarm scheduler</td><td>One interface, two platform versions. Android: exact alarm + full-screen intent + alarm channel. iOS: AlarmKit on 26+, time-sensitive notifications as fallback.</td></tr>
+        <tr><td>Repositories + stores</td><td>Plain SQL through <code>expo-sqlite</code> with typed helpers (<code>getAll()</code>, <code>insert()</code>, <code>update()</code>). Zustand stores hold the loaded lists and reload on <code>addDatabaseChangeListener</code>, so any write or sync refreshes the screens.</td></tr>
+        <tr><td>Sync engine</td><td>The only code that talks to Supabase besides auth. Pushes the outbox with <code>upsert</code>, pulls with <code>.gt('server_updated_at', since)</code>, syncs when NetInfo says you're back online, and listens on Realtime for "something changed".</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Reminder engine</div>
+  <h2>Life of a reminder</h2>
+  <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Scheduled
+  Scheduled --> HeadsUp: T-15
+  HeadsUp --> VoiceAlert: T 0
+  VoiceAlert --> Ringing: T+10 still open
+  Ringing --> Answered: picked up
+  Ringing --> PhoneCall: T+20 missed
+  PhoneCall --> Answered: picked up
+  PhoneCall --> PhoneCall: no answer, retry once after 5 min
+  PhoneCall --> BuddyNudge: still no answer
+  Answered --> Done: Done
+  Answered --> Snoozed: Snooze
+  Answered --> Moved: Tomorrow
+  Snoozed --> Ringing: snooze ends
+  BuddyNudge --> Exhausted
+  Done --> [*]
+  Moved --> [*]
+  Exhausted --> [*]
+</pre>
+  </div>
+  <p class="caption">From any state, finishing the task on any device jumps straight to Cancelled. Every transition is written to <code>reminder_event</code>, so the Review screen can show "you needed a phone call 4 times this week".</p>
+
+  <div class="cols2">
+    <div class="box">
+      <h3>Who runs which step</h3>
+      <ul class="plain">
+        <li><b>The phone</b> schedules heads-up, voice alert and ring with the operating system as soon as the task is saved. They fire with no internet and with the app closed.</li>
+        <li><b>The server</b> only runs phone calls and buddy SMS, from a worker that checks every minute.</li>
+        <li>Only one device is the <b>alarm device</b> (a setting), so two phones never ring for the same task.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>How a phone call is made</h3>
+      <ul class="plain">
+        <li>The worker finds reminder rows with <code>channel = phone_call</code>, due now, task still open, not in quiet hours.</li>
+        <li>It asks Twilio to call your verified number. Twilio fetches instructions from a webhook: say the task, <b>play your recording</b> from a 10-minute signed link, then wait for a keypress.</li>
+        <li>The keypress webhook marks the task done, snoozed or moved, and sends a silent push so the phone cancels its own alarms.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Key flow</div>
+  <h2>A missed must-do, end to end</h2>
+  <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as You
+  participant App as Phone app
+  participant OS as Phone OS alarms
+  participant S as Supabase
+  participant W as Escalation worker
+  participant T as Twilio
+
+  U->>App: Add task, hold mic, record a voice note
+  App->>OS: Schedule T-15, T 0, T+10
+  App->>S: Sync task and reminder rows, upload recording
+  OS-->>U: T 0 voice alert
+  OS-->>U: T+10 ring screen
+  U--xOS: Ignored
+  loop every minute
+    W->>S: Find due phone_call reminders where the task is open
+  end
+  W->>T: Call your number
+  T->>U: Phone rings
+  T->>S: Ask voice webhook what to say
+  S-->>T: Say title, play recording, wait for a key
+  U->>T: Press 1
+  T->>S: Keypress webhook, digit 1
+  S->>S: Task done, cancel remaining reminders
+  S-->>App: Silent push
+  App->>OS: Cancel local alarms
+</pre>
+  </div>
+  <p class="caption">If the phone was offline when you finished the task, the server may still call. Pressing 1 closes it, and the next sync confirms the task is done.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Data model</div>
+  <h2>Tables</h2>
+  <div class="diagram">
+<pre class="mermaid">
+erDiagram
+  WORKSPACE ||--o{ PLAN : contains
+  WORKSPACE ||--o{ TASK : contains
+  PLAN ||--o{ TASK : groups
+  TASK ||--o{ TASK : subtasks
+  TASK ||--o| RECORDING : "voice note"
+  TASK ||--o{ REMINDER : has
+  REMINDER ||--o{ REMINDER_EVENT : logs
+  REMINDER_POLICY ||--o{ REMINDER : generates
+  WORKSPACE ||--o| REMINDER_POLICY : default
+  RECURRENCE ||--o{ TASK : creates
+  TASK ||--o{ TIME_ENTRY : tracks
+  PLACE ||--o{ TASK : "location trigger"
+  WORKSPACE {
+    uuid id PK
+    text name
+    text kind "personal or company"
+    text color
+    int daily_capacity_min
+    jsonb work_hours
+  }
+  PLAN {
+    uuid id PK
+    uuid workspace_id FK
+    text name
+    text goal
+    text status "active paused done"
+    date target_date
+  }
+  TASK {
+    uuid id PK
+    uuid workspace_id FK "null means Inbox"
+    uuid plan_id FK
+    uuid parent_id FK
+    text title
+    text status "todo doing done dropped"
+    int priority
+    bool must_do
+    bool critical
+    date scheduled_date "when to do it"
+    timestamptz due_at "deadline"
+    int estimate_min
+    int carry_count
+    int snooze_count
+    uuid place_id FK
+  }
+  RECORDING {
+    uuid id PK
+    uuid task_id FK
+    text storage_path
+    int duration_s
+    text transcript
+  }
+  REMINDER_POLICY {
+    uuid id PK
+    jsonb steps "offset and channel list"
+    int max_snoozes
+    jsonb quiet_hours
+  }
+  REMINDER {
+    uuid id PK
+    uuid task_id FK
+    text channel "notify voice ring phone_call sms_buddy"
+    timestamptz fire_at
+    text status "scheduled fired answered cancelled"
+    text external_id "OS alarm id or Twilio call id"
+  }
+  REMINDER_EVENT {
+    uuid id PK
+    uuid reminder_id FK
+    text event
+    timestamptz at
+  }
+  RECURRENCE {
+    uuid id PK
+    uuid workspace_id FK
+    text title
+    text rrule
+  }
+  TIME_ENTRY {
+    uuid id PK
+    uuid task_id FK
+    timestamptz started_at
+    timestamptz ended_at
+    bool billable
+  }
+  PLACE {
+    uuid id PK
+    text name "Company A office"
+    float lat
+    float lng
+    int radius_m
+  }
+</pre>
+  </div>
+  <p class="note">Every table also has <code>user_id</code>, <code>created_at</code>, <code>updated_at</code>, <code>deleted_at</code> (soft delete) and a server-side <code>server_updated_at</code> for sync. Also stored but left out of the diagram: <code>daily_note</code>, <code>device</code> (push token, is alarm device), <code>phone_number</code> (verified), <code>buddy</code>, <code>tag</code>.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Screen</th><th>Query</th></tr></thead>
+      <tbody>
+        <tr><td>Today</td><td><code>scheduled_date &lt;= today AND status IN (todo, doing)</code>, grouped by workspace, overdue flagged, capacity bar per workspace</td></tr>
+        <tr><td>Tomorrow</td><td><code>scheduled_date = today + 1</code></td></tr>
+        <tr><td>Inbox</td><td><code>workspace_id IS NULL</code></td></tr>
+        <tr><td>Workspace</td><td>Active plans with progress, plus loose tasks in that workspace</td></tr>
+        <tr><td>Stale</td><td><code>carry_count &gt;= 3</code>: asks you to do, break down, move to someday or drop</td></tr>
+        <tr><td>Log</td><td><code>status = done</code> by workspace and date range, copied as a standup or weekly report</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Built for forgetful and lazy days</div>
+  <h2>Feature set</h2>
+  <p>Each feature removes one excuse: "I forgot to write it down", "I forgot it existed", "I forgot to look", or "I didn't feel like it".</p>
+  <div class="groups">
+    <div class="group">
+      <h3>Capture in 2 seconds</h3>
+      <ul>
+        <li><b>Hold-to-talk quick add.</b> "Remind me to send Company A the invoice tomorrow at 10." Speech-to-text runs on the phone, then AI picks the workspace, date and time. <span class="ph">P3</span></li>
+        <li><b>Widget and lock screen button</b> that opens straight into recording. <span class="ph">P3</span></li>
+        <li><b>Share to planner</b> from WhatsApp, email or a browser to create a task with the link. <span class="ph">P3</span></li>
+        <li><b>Inbox</b> for anything without a date or company. Sort it later. <span class="ph">P1</span></li>
+      </ul>
+    </div>
+    <div class="group">
+      <h3>Impossible to miss</h3>
+      <ul>
+        <li><b>Escalation ladder</b> ending in the ring screen and a real phone call. <span class="ph">P1 / P2</span></li>
+        <li><b>Voice notes from past you</b> played at reminder time. <span class="ph">P1</span></li>
+        <li><b>Location reminders.</b> "When I arrive at Company A's office" triggers that company's tasks and switches focus. <span class="ph">P3</span></li>
+        <li><b>Snooze limit</b> of 3, then the task must be decided. <span class="ph">P1</span></li>
+        <li><b>Quiet hours</b> so it never calls you at 2 am unless the task is critical. <span class="ph">P1</span></li>
+      </ul>
+    </div>
+    <div class="group">
+      <h3>Plans itself (almost)</h3>
+      <ul>
+        <li><b>Morning briefing</b> notification: "Today: 3 Company A, 2 Company B, 1 personal. 7 h planned." <span class="ph">P3</span></li>
+        <li><b>Evening plan-tomorrow nudge</b> at a set time that shows leftovers and lets you drag 3 tasks into tomorrow. <span class="ph">P3</span></li>
+        <li><b>Auto-rollover</b> plus a <b>stale task</b> prompt after 3 carry-overs. <span class="ph">P1</span></li>
+        <li><b>What now?</b> button that picks the one next task for you. <span class="ph">P2</span></li>
+        <li><b>Recurring tasks and routines</b> such as standups, invoices and weekly reports. <span class="ph">P2</span></li>
+        <li><b>Google Calendar</b> meetings shown on Today and subtracted from your capacity. <span class="ph">P3</span></li>
+      </ul>
+    </div>
+    <div class="group">
+      <h3>Keeps you honest</h3>
+      <ul>
+        <li><b>Focus mode</b> by working hours: in Company A's hours, Company B and Personal are hidden and their rings are softened. <span class="ph">P2</span></li>
+        <li><b>Accountability buddy</b>: opt-in SMS to one friend for missed must-dos. <span class="ph">P4</span></li>
+        <li><b>Streaks and a done-for-the-day screen</b> when Today is empty. <span class="ph">P4</span></li>
+        <li><b>Weekly report per company</b> and an optional time tracker for billing. <span class="ph">P4</span></li>
+        <li><b>Escalation stats</b>: "You needed a phone call 4 times this week, all Company B." <span class="ph">P4</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Sync</div>
+  <h2>Offline first, synced when online</h2>
+  <ul class="plain">
+    <li>The phone's SQLite database is the source of truth for the screens. Screens never wait for the network.</li>
+    <li>Ids are UUIDs made on the device, so tasks can be created offline.</li>
+    <li>Every write also goes into an <b>outbox</b>. When NetInfo says you're online, the sync engine pushes it with <code>supabase.from(table).upsert(...)</code>. A trigger on each table keeps the newest edit by <code>updated_at</code> and stamps <code>server_updated_at = now()</code>.</li>
+    <li>Pull asks each table for <code>.select().gt('server_updated_at', since)</code>, starting a few seconds early so no row is missed. A Realtime ping tells other devices to pull right away.</li>
+    <li>Deletes are soft (<code>deleted_at</code>) so they sync like any other change. A nightly job purges rows deleted more than 30 days ago.</li>
+    <li>Changes made in the browser (new task, new time, done, new reminder rules) reach the phone by silent push, because a sleeping phone may not be listening to Realtime. The phone pulls, re-plans and re-schedules its alarms, then reports "alarms armed" back to the browser.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">Backend</div>
+  <h2>Server pieces</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Piece</th><th>Runs on</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td>Auth</td><td>Supabase Auth</td><td>Email one-time code, Sign in with Apple, Google sign-in</td></tr>
+        <tr><td>Database</td><td>Supabase Postgres</td><td>All tables, row-level security on <code>user_id = auth.uid()</code>, a trigger per table that keeps the newest edit and stamps <code>server_updated_at</code></td></tr>
+        <tr><td>Recordings</td><td>Supabase Storage</td><td>Private bucket, path <code>{user_id}/{task_id}.m4a</code>, short-lived signed links only</td></tr>
+        <tr><td><code>escalation-worker</code></td><td>Edge Function, triggered every minute by pg_cron</td><td>Places due phone calls and buddy SMS, retries no-answers once</td></tr>
+        <tr><td><code>twilio-voice</code></td><td>Edge Function (webhook)</td><td>Returns call instructions: say the title, play the recording, wait for 1 / 2 / 3</td></tr>
+        <tr><td><code>twilio-keypress</code></td><td>Edge Function (webhook)</td><td>Applies done / snooze / tomorrow and sends the cancel push</td></tr>
+        <tr><td><code>twilio-status</code></td><td>Edge Function (webhook)</td><td>Logs answered, busy, no-answer into <code>reminder_event</code></td></tr>
+        <tr><td><code>parse-task</code></td><td>Edge Function</td><td>Sends the transcript to the Claude API (<code>claude-haiku-5-5</code>) with your workspace names and returns title, workspace, date, time and must-do</td></tr>
+        <tr><td><code>daily-digest</code></td><td>Edge Function, cron</td><td>Morning briefing and evening plan-tomorrow pushes</td></tr>
+        <tr><td><code>calendar-sync</code></td><td>Edge Function, cron</td><td>Reads today's Google Calendar events (read-only)</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre class="code">-- Every table: you can only ever see your own rows
+alter table task enable row level security;
+create policy "own rows" on task
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Worker query (runs every minute)
+select r.* from reminder r join task t on t.id = r.task_id
+where r.channel in ('phone_call','sms_buddy')
+  and r.status = 'scheduled' and r.fire_at &lt;= now()
+  and t.status in ('todo','doing') and t.deleted_at is null
+for update of r skip locked;   -- two workers can never call twice</pre>
+</section>
+
+<section>
+  <div class="eyebrow">Security and privacy</div>
+  <h2>Guard rails</h2>
+  <div class="cols2">
+    <div class="box">
+      <h3>Your data</h3>
+      <ul class="plain">
+        <li>Row-level security on every table, so one account can never read another's rows.</li>
+        <li>Recordings are private. Twilio gets a signed link that expires in 10 minutes.</li>
+        <li>One-tap JSON export of everything, plus a weekly automatic export to your own Google Drive.</li>
+        <li>Company tasks stay generic. Don't paste client data, passwords or code. Check your contracts.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Calls and money</h3>
+      <ul class="plain">
+        <li>Your phone number and your buddy's are verified with a one-time code before the app can ever call or text them.</li>
+        <li>Every Twilio webhook checks Twilio's request signature, so nobody else can trigger "mark done".</li>
+        <li>Hard cap of 10 calls and 5 SMS per day to control cost.</li>
+        <li>API keys live only in Edge Function secrets, never in the app.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Tech stack</div>
+  <h2>What it's built with</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>App framework</td><td>Expo SDK 58 (React Native 0.88, React 19.3) + TypeScript 6</td><td>One codebase for iOS, Android and the browser. Expo Go for quick testing; EAS dev builds for the native alarm code and releases.</td></tr>
+        <tr><td>Navigation</td><td><code>expo-router</code></td><td>Tabs, stacks and modals; the ring screen is a full-screen modal</td></tr>
+        <tr><td>Local database</td><td>Plain <code>expo-sqlite</code>, no ORM</td><td>SQL <code>CREATE TABLE</code> migrations tracked with <code>PRAGMA user_version</code>; typed repository helpers</td></tr>
+        <tr><td>State</td><td><code>zustand</code></td><td>Holds lists from the repositories and reloads on <code>addDatabaseChangeListener</code></td></tr>
+        <tr><td>Auth session</td><td><code>@supabase/supabase-js</code> + <code>expo-secure-store</code></td><td>Session kept in secure storage on the phone, local storage in the browser</td></tr>
+        <tr><td>Network</td><td><code>@react-native-community/netinfo</code></td><td>Sync as soon as you're back online</td></tr>
+        <tr><td>Forms</td><td><code>react-hook-form</code> + <code>zod</code></td><td>Task form validation</td></tr>
+        <tr><td>Charts and dates</td><td><code>victory-native</code>, <code>date-fns</code></td><td>Review charts, date maths for rollover and reminders</td></tr>
+        <tr><td>Export and import</td><td><code>papaparse</code>, <code>expo-print</code>, <code>expo-sharing</code>, <code>expo-file-system</code>, <code>expo-document-picker</code></td><td>CSV, PDF and JSON backup out; JSON and CSV back in</td></tr>
+        <tr><td>Keys</td><td><code>.env</code> with <code>EXPO_PUBLIC_*</code></td><td>Supabase URL and public key only. Twilio and Claude keys stay in Edge Function secrets.</td></tr>
+        <tr><td>Android alarms</td><td>Small Kotlin Expo module (or Notifee): exact alarm, full-screen intent, alarm channel</td><td>Ring screen that works with the app closed</td></tr>
+        <tr><td>iOS alarms</td><td>Small Swift Expo module wrapping AlarmKit, with expo-notifications as fallback</td><td>The strongest alert Apple allows</td></tr>
+        <tr><td>Audio</td><td>expo-audio</td><td>Record and play voice notes</td></tr>
+        <tr><td>Speech to text</td><td>On-device recognition (expo-speech-recognition)</td><td>Free, private, fast</td></tr>
+        <tr><td>Location</td><td>expo-location + expo-task-manager geofencing</td><td>"When I arrive at Company A"</td></tr>
+        <tr><td>Widgets</td><td>WidgetKit (iOS), Android app widget</td><td>Today list and record button on the home screen</td></tr>
+        <tr><td>Backend</td><td>Supabase</td><td>Auth, Postgres, Storage, Realtime, Edge Functions, cron in one place</td></tr>
+        <tr><td>Calls and SMS</td><td>Twilio Programmable Voice + SMS</td><td>The only reliable way to ring every phone</td></tr>
+        <tr><td>Push</td><td>Expo Push Notifications</td><td>One API for APNs and FCM</td></tr>
+        <tr><td>Testing</td><td>Vitest (domain logic), Maestro (phone end-to-end)</td><td>Rollover, recurrence and the reminder planner are pure functions, easy to test</td></tr>
+        <tr><td>Delivery</td><td>EAS Build + EAS Update, GitHub Actions, Supabase CLI migrations</td><td>App store builds plus instant JS updates</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Code layout</div>
+  <h2>Folder structure</h2>
+<pre class="code">call-me-planner/
+├─ app/                        Expo Router screens
+│  ├─ (tabs)/today.tsx  tomorrow.tsx  inbox.tsx  review.tsx
+│  ├─ workspace/[id].tsx       plan/[id].tsx
+│  ├─ ring/[reminderId].tsx    the incoming-call screen
+│  └─ settings/                policies, quiet hours, phone, buddy, places
+├─ src/
+│  ├─ domain/                  pure TypeScript, no React
+│  │  ├─ rollover.ts  recurrence.ts  capacity.ts
+│  │  ├─ reminderPlanner.ts  nextTask.ts  reports.ts
+│  ├─ data/
+│  │  ├─ db.ts                 opens expo-sqlite, runs migrations
+│  │  ├─ migrations.ts         SQL steps, tracked by PRAGMA user_version
+│  │  ├─ repositories/         typed getAll / insert / update helpers
+│  │  └─ sync/  outbox.ts  push.ts  pull.ts  realtime.ts  netinfo.ts
+│  ├─ stores/                  zustand, reload on database change
+│  ├─ device/
+│  │  ├─ alarms/  index.ts  android.ts  ios.ts
+│  │  ├─ audio/  speech/  location/  widgets/
+│  └─ ui/                      shared components
+├─ modules/
+│  ├─ alarmkit-bridge/         Swift
+│  └─ android-alarm/           Kotlin
+└─ supabase/
+   ├─ migrations/
+   └─ functions/
+      ├─ escalation-worker/  twilio-voice/  twilio-keypress/  twilio-status/
+      └─ parse-task/  daily-digest/  calendar-sync/</pre>
+</section>
+
+<section>
+  <div class="eyebrow">Roadmap</div>
+  <h2>Build order</h2>
+  <div class="phases">
+    <div class="phase"><span class="n">Phase 1 · MVP</span><h3>Works on one phone</h3>
+      <ul><li>Workspaces, plans, tasks, Inbox</li><li>Today, Tomorrow, Workspace, Plan screens</li><li>Rollover + stale prompt</li><li>Voice notes</li><li>Heads-up, voice alert, ring screen</li><li>Snooze limit, quiet hours</li><li>JSON export</li></ul></div>
+    <div class="phase"><span class="n">Phase 2</span><h3>Cloud and phone calls</h3>
+      <ul><li>Supabase sign-in and sync</li><li>Browser app with full control</li><li>Twilio phone-call step</li><li>Cross-device cancel</li><li>Recurring tasks</li><li>Focus mode, What now?</li></ul></div>
+    <div class="phase"><span class="n">Phase 3</span><h3>Zero-effort capture</h3>
+      <ul><li>Hold-to-talk + AI parse</li><li>Widgets, share-to-app</li><li>Location reminders</li><li>Morning and evening briefings</li><li>Google Calendar</li></ul></div>
+    <div class="phase"><span class="n">Phase 4</span><h3>Motivation</h3>
+      <ul><li>Buddy SMS</li><li>Streaks</li><li>Weekly report per company</li><li>Time tracker</li><li>Escalation stats</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Risks</div>
+  <h2>What can go wrong</h2>
+  <div class="cols2">
+    <div class="box risk"><h3>Phone makers kill alarms</h3><p>Some Android phones (Xiaomi, Oppo, Samsung) stop background apps to save battery. Onboarding walks you through "allow alarms" and "don't optimise battery", and the app uses the alarm-clock API, which is the hardest one for the system to delay.</p></div>
+    <div class="box risk"><h3>Store rules</h3><p>Google Play requires a declaration for exact alarms and full-screen alerts (allowed for alarm apps). Apple rejects fake call screens, which is why iOS uses AlarmKit plus a real Twilio call.</p></div>
+    <div class="box risk"><h3>Call cost and numbers</h3><p>Twilio charges per minute plus a monthly fee for the number. Prices change, so check them before Phase 2. Some countries, including Australia, need ID or address checks to buy a local number. The daily cap limits surprises.</p></div>
+    <div class="box risk"><h3>Alarm fatigue</h3><p>If everything rings, you'll start ignoring it. Only must-do tasks escalate, snoozes are limited, and Review shows which workspace needs calls most so you can fix the plan, not just the alarm.</p></div>
+  </div>
+</section>
+
+<hr>
+<p class="note">Open decisions: whether a company pays by the hour (moves the time tracker earlier), which phone you use (Android gets the full ring screen in Phase 1, iPhone needs iOS 26 or later for it), and whether you want the buddy feature at all.</p>
+
+</div>
