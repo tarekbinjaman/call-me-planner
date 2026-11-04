@@ -1,10 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet, Switch, View } from 'react-native';
 
 import { getRepos } from '@/data';
+import type { Recording } from '@/data/types';
+import { saveVoiceNote } from '@/data/voice-notes';
+import * as recordingFiles from '@/device/audio/recording-files';
+import { KEEP, visibleNote, type VoiceNoteDraft } from '@/domain/voice-notes';
 import {
   EMPTY_TASK_FORM,
   ESTIMATE_CHOICES,
@@ -26,6 +30,7 @@ import { Screen } from '@/ui/screen';
 import { Text } from '@/ui/text';
 import { Spacing } from '@/ui/theme';
 import { useTheme } from '@/ui/use-theme';
+import { VoiceNoteField } from '@/ui/voice-note';
 
 const NONE = '__none__';
 
@@ -45,6 +50,25 @@ export default function EditTaskScreen() {
   const theme = useTheme();
   const workspaces = useWorkspaces((s) => s.items);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedNote, setSavedNote] = useState<Recording | null>(null);
+  const [draft, setDraftState] = useState<VoiceNoteDraft>(KEEP);
+  // A recorded-but-unsaved file is deleted when it is replaced, or when the form closes unsaved.
+  const draftRef = useRef<VoiceNoteDraft>(KEEP);
+  const setDraft = (next: VoiceNoteDraft) => {
+    const prev = draftRef.current;
+    if (prev.kind === 'new' && !(next.kind === 'new' && next.tempUri === prev.tempUri)) {
+      recordingFiles.deleteRecordingFile(prev.tempUri);
+    }
+    draftRef.current = next;
+    setDraftState(next);
+  };
+  useEffect(
+    () => () => {
+      const d = draftRef.current;
+      if (d.kind === 'new') recordingFiles.deleteRecordingFile(d.tempUri);
+    },
+    [],
+  );
 
   const {
     control,
@@ -65,14 +89,17 @@ export default function EditTaskScreen() {
   useEffect(() => {
     if (!id) return;
     void (async () => {
-      const task = await (await getRepos()).tasks.getById(id);
+      const repos = await getRepos();
+      const task = await repos.tasks.getById(id);
       if (task) reset(taskToForm(task));
+      setSavedNote((await repos.recordings.forTask(id))[0] ?? null);
     })();
   }, [id, reset]);
 
   const workspaceId = useWatch({ control, name: 'workspaceId' });
   const scheduledDate = useWatch({ control, name: 'scheduledDate' });
   const mustDo = useWatch({ control, name: 'mustDo' });
+  const title = useWatch({ control, name: 'title' });
 
   const plans = useLiveQuery(
     ['plan'],
@@ -83,22 +110,32 @@ export default function EditTaskScreen() {
     [workspaceId],
   );
 
-  const onSave = handleSubmit(async (values) => {
+  const submit = async (values: TaskFormValues) => {
     setSaveError(null);
     try {
       const repos = await getRepos();
       const data = formToTask(values);
-      if (id) {
-        await repos.tasks.update(id, data);
-        router.back();
-      } else {
-        const created = await repos.tasks.insert(data);
-        router.replace({ pathname: '/task/[id]', params: { id: created.id } });
+      let taskId = id;
+      if (taskId) await repos.tasks.update(taskId, data);
+      else taskId = (await repos.tasks.insert(data)).id;
+      try {
+        await saveVoiceNote(repos, taskId, draftRef.current, recordingFiles);
+        // The file now belongs to the saved note, so closing the form must not delete it.
+        draftRef.current = KEEP;
+      } catch (error) {
+        setSaveError(
+          `The task was saved, but the voice note wasn't: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        if (!id) router.setParams({ id: taskId });
+        return;
       }
+      if (id) router.back();
+      else router.replace({ pathname: '/task/[id]', params: { id: taskId } });
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : String(error));
     }
-  });
+  };
+  const onSave = () => handleSubmit(submit)();
 
   const days = quickDays();
 
@@ -322,6 +359,13 @@ export default function EditTaskScreen() {
               />
             </Field>
           )}
+        />
+
+        <VoiceNoteField
+          note={visibleNote(savedNote, draft)}
+          title={title}
+          onRecorded={(tempUri, durationS) => setDraft({ kind: 'new', tempUri, durationS })}
+          onRemove={() => setDraft(savedNote ? { kind: 'remove' } : KEEP)}
         />
 
         {saveError ? (

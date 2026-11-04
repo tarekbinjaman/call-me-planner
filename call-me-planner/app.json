@@ -43,7 +43,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Call-Me Planner records short voice notes for your tasks, so a reminder can play your own voice."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -22,6 +22,7 @@ import { TaskRow } from '@/ui/task-row';
 import { Text } from '@/ui/text';
 import { Radius, Spacing } from '@/ui/theme';
 import { useTheme } from '@/ui/use-theme';
+import { ReadAloudButton, VoiceNotePlayer } from '@/ui/voice-note';
 import { useWorkspaceColor } from '@/ui/workspace-color';
 
 const NO_DAY = '__none__';
@@ -34,17 +35,18 @@ export default function TaskScreen() {
   const theme = useTheme();
 
   const data = useLiveQuery(
-    ['task', 'plan', 'workspace'],
+    ['task', 'plan', 'workspace', 'recording'],
     async (r) => {
       const task = await r.tasks.getById(id);
       if (!task || task.deletedAt) return null;
-      const [workspace, plan, subtasks, parent] = await Promise.all([
+      const [workspace, plan, subtasks, parent, notes] = await Promise.all([
         task.workspaceId ? r.workspaces.getById(task.workspaceId) : null,
         task.planId ? r.plans.getById(task.planId) : null,
         r.tasks.subtasks(task.id),
         task.parentId ? r.tasks.getById(task.parentId) : null,
+        r.recordings.forTask(task.id),
       ]);
-      return { task, workspace, plan, subtasks, parent };
+      return { task, workspace, plan, subtasks, parent, note: notes[0] ?? null };
     },
     [id],
   );
@@ -58,7 +60,7 @@ export default function TaskScreen() {
   }
   const d = data.data;
   if (!d) return <Screen kind="stack" title="" />;
-  const { task, workspace, plan, subtasks, parent } = d;
+  const { task, workspace, plan, subtasks, parent, note } = d;
   const open = task.status === 'todo' || task.status === 'doing';
   const days = quickDays();
 
@@ -126,6 +128,18 @@ export default function TaskScreen() {
               <Text>{task.notes}</Text>
             </View>
           ) : null}
+          <View style={[styles.notes, { borderTopColor: theme.border }]}>
+            {note ? (
+              <VoiceNotePlayer key={note.uri} uri={note.uri} durationS={note.durationS} />
+            ) : (
+              <>
+                <Text variant="small" color="textMuted">
+                  No voice note. Reminders will read the title aloud. Record one from Edit.
+                </Text>
+                <ReadAloudButton title={task.title} />
+              </>
+            )}
+          </View>
         </Card>
 
         {!parent ? (

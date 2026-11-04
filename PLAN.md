@@ -136,11 +136,11 @@ No account, no internet needed.
 - [x] `reminderPlanner.ts` (`reminder-planner.ts`): task + policy → list of reminder rows; recalculates on done, snooze, move or time change. The `reminder` table is kept in step automatically; 1.7 turns the rows into phone alarms
 
 ### 1.6 Voice notes
-- [ ] Ask for microphone permission with a clear explanation screen
-- [ ] Hold-to-record button on the task form (max 60 s, AAC mono)
-- [ ] Play, re-record and delete a recording
-- [ ] Store the file on the device and link it in the `recording` table
-- [ ] Fallback: read the task title aloud with text-to-speech when there is no recording
+- [x] Ask for microphone permission with a clear explanation screen (explanation card on the task form before the system prompt)
+- [x] Hold-to-record button on the task form (max 60 s, AAC mono); a quick tap starts tap-to-stop mode
+- [x] Play, re-record and delete a recording
+- [x] Store the file on the device and link it in the `recording` table (browser: stored in the row until Phase 2 Storage)
+- [x] Fallback: read the task title aloud with text-to-speech when there is no recording (helper ready; the ring screen in 1.7 uses it)
 
 ### 1.7 Alarms and the ring screen (EAS dev build from here on)
 - [ ] Alarm scheduler interface in `src/device/alarms/index.ts`: `schedule(reminder)`, `cancel(reminderId)`, `cancelAllForTask(taskId)`

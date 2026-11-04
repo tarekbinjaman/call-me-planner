@@ -101,11 +101,18 @@ export function createRepositories(deps: RepoDeps) {
     orderBy: 'sort_order, created_at',
   });
 
-  const recordings = createRepository<Recording, 'transcript'>(deps, {
+  const recordingsBase = createRepository<Recording, 'transcript'>(deps, {
     table: 'recording',
     fields: { taskId: 'text', uri: 'text', durationS: 'number', transcript: 'text' },
     defaults: { transcript: null },
   });
+  const recordings = {
+    ...recordingsBase,
+    /** The task's voice notes, newest first (normally just one). */
+    forTask(taskId: string) {
+      return recordingsBase.getAll({ where: 'task_id = ?', params: [taskId], orderBy: 'created_at DESC' });
+    },
+  };
 
   const reminderPolicies = createRepository<
     ReminderPolicy,
