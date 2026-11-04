@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRepos } from '@/data';
 import { answerRing, markRingMissed, markRingShown, type AnswerResult } from '@/data/ring';
+import { getAlarmScheduler } from '@/device/alarms';
 import { speakTaskTitle, stopSpeaking } from '@/device/audio/speak';
 import { policyFor } from '@/domain/reminder-planner';
 import { ringSecondsLeft, SNOOZE_MIN, showSnooze, type RingAnswer } from '@/domain/ring';
@@ -96,6 +97,7 @@ export default function RingScreen() {
 
   // Mark as ringing once; tick the countdown; log a miss at the timeout.
   useEffect(() => {
+    getAlarmScheduler().stopRinging(reminderId);
     void (async () => markRingShown(await getRepos(), reminderId))();
   }, [reminderId]);
   const secondsLeft = ringSecondsLeft(shownAt, now);

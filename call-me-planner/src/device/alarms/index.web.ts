@@ -9,8 +9,13 @@ const noAlarms: AlarmScheduler = {
   cancel: async () => {},
   cancelAllForTask: async () => {},
   armed: async () => [],
+  stopRinging: () => {},
 };
 
 export function getAlarmScheduler(): AlarmScheduler {
   return noAlarms;
+}
+
+export function listenForAlarms(): () => void {
+  return () => {};
 }

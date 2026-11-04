@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { AlarmReminder, AlarmScheduler } from '@/domain/alarms';
+import type { AlarmScheduler, AlarmToArm } from '@/domain/alarms';
 
 import { armAlarms } from './alarms';
 import { syncReminders } from './reminders';
@@ -16,7 +16,7 @@ afterEach(() => {
 const at = (h: number, m = 0, day = 4) => new Date(2026, 10, day, h, m);
 
 function fakeScheduler(kind: AlarmScheduler['kind'] = 'in-app') {
-  const map = new Map<string, AlarmReminder>();
+  const map = new Map<string, AlarmToArm>();
   const scheduler: AlarmScheduler = {
     kind,
     schedule: async (r) => void map.set(r.id, r),
@@ -25,6 +25,7 @@ function fakeScheduler(kind: AlarmScheduler['kind'] = 'in-app') {
       for (const [id, r] of map) if (r.taskId === taskId) map.delete(id);
     },
     armed: async () => [...map.values()],
+    stopRinging: () => {},
   };
   return { scheduler, channels: () => [...map.values()].map((r) => r.channel).sort() };
 }

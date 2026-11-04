@@ -144,7 +144,7 @@ No account, no internet needed.
 
 ### 1.7 Alarms and the ring screen (EAS dev build from here on)
 - [x] Alarm scheduler interface in `src/device/alarms/index.ts`: `schedule(reminder)`, `cancel(reminderId)`, `cancelAllForTask(taskId)` (in-app stand-in for Expo Go until the native module; browser never rings)
-- [ ] **Android** (Kotlin Expo module or Notifee):
+- [ ] **Android** (Kotlin Expo module `modules/call-me-alarms`; code written, waiting for the first EAS dev build test):
   - [ ] Exact alarms (alarm-clock API) for heads-up, voice alert and ring
   - [ ] Notification channel on the alarm sound stream
   - [ ] Full-screen intent that opens the ring screen over the lock screen

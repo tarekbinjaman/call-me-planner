@@ -49,7 +49,8 @@
         {
           "microphonePermission": "Call-Me Planner records short voice notes for your tasks, so a reminder can play your own voice."
         }
-      ]
+      ],
+      "./modules/call-me-alarms/app.plugin.js"
     ],
     "experiments": {
       "typedRoutes": true,

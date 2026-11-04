@@ -4,6 +4,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { listenForAlarms } from '@/device/alarms';
 import { useDatabaseStore } from '@/stores/database-store';
 import { useReminderSync } from '@/stores/use-reminder-sync';
 import { useRollover } from '@/stores/use-rollover';
@@ -20,6 +21,7 @@ export default function RootLayout() {
 
   useRollover();
   useReminderSync();
+  useEffect(() => listenForAlarms(), []);
 
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme = {

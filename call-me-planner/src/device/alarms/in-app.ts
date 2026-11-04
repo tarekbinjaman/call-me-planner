@@ -34,6 +34,7 @@ export const inAppScheduler: AlarmScheduler = {
       armed.delete(id);
     }
   },
+  stopRinging() {},
   async armed() {
     return [...armed.values()].map((a) => ({
       id: a.reminder.id,
