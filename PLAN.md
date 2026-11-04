@@ -143,7 +143,7 @@ No account, no internet needed.
 - [x] Fallback: read the task title aloud with text-to-speech when there is no recording (helper ready; the ring screen in 1.7 uses it)
 
 ### 1.7 Alarms and the ring screen (EAS dev build from here on)
-- [ ] Alarm scheduler interface in `src/device/alarms/index.ts`: `schedule(reminder)`, `cancel(reminderId)`, `cancelAllForTask(taskId)`
+- [x] Alarm scheduler interface in `src/device/alarms/index.ts`: `schedule(reminder)`, `cancel(reminderId)`, `cancelAllForTask(taskId)` (in-app stand-in for Expo Go until the native module; browser never rings)
 - [ ] **Android** (Kotlin Expo module or Notifee):
   - [ ] Exact alarms (alarm-clock API) for heads-up, voice alert and ring
   - [ ] Notification channel on the alarm sound stream
@@ -154,10 +154,10 @@ No account, no internet needed.
   - [ ] AlarmKit alarm for the ring step on iOS 26+
   - [ ] Time-sensitive local notifications with a custom sound as fallback
   - [ ] Stay under the 64 pending local notifications limit (schedule only the next 48 hours, top up on app open)
-- [ ] **Ring screen** (`app/ring/[reminderId].tsx`): task title, workspace badge, due time, snooze count, plays the recording, big Done / Snooze 10 min / Move to tomorrow buttons
-- [ ] Snooze limit (default 3), then the Snooze button is hidden
-- [ ] Ignored ring is logged as `missed` in `reminder_event`
-- [ ] Quiet hours: ring and voice steps shift to the end of quiet hours unless the task is critical
+- [x] **Ring screen** (`app/ring/[reminderId].tsx`): task title, workspace badge, due time, snooze count, plays the recording, big Done / Snooze 10 min / Move to tomorrow buttons
+- [x] Snooze limit (default 3), then the Snooze button is hidden
+- [x] Ignored ring is logged as `missed` in `reminder_event`
+- [x] Quiet hours: ring and voice steps shift to the end of quiet hours unless the task is critical (in the reminder planner)
 
 ### 1.8 Onboarding and settings
 - [ ] Onboarding: pick workspace names, set working hours, set quiet hours

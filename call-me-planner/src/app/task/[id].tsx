@@ -1,5 +1,9 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+
+import { getRepos } from '@/data';
+import { scheduleTestRing } from '@/data/ring';
 
 import {
   addSubtask,
@@ -9,6 +13,7 @@ import {
   setTaskStatus,
 } from '@/data/task-actions';
 import type { Task } from '@/data/types';
+import { getAlarmScheduler } from '@/device/alarms';
 import { describeDay, formatEstimate, priorityLabel, quickDays, timeOf } from '@/domain/tasks';
 import { useLiveQuery } from '@/stores/use-live-query';
 import { useWorkspaces } from '@/stores/workspaces';
@@ -33,6 +38,18 @@ export default function TaskScreen() {
   const workspaces = useWorkspaces((s) => s.items);
   const colorOf = useWorkspaceColor();
   const theme = useTheme();
+  const scheduler = getAlarmScheduler();
+  const canRing = scheduler.kind !== 'none';
+  const [testRingAt, setTestRingAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!testRingAt) return;
+    const timer = setTimeout(() => setTestRingAt(null), Math.max(0, testRingAt - Date.now()) + 2000);
+    return () => clearTimeout(timer);
+  }, [testRingAt]);
+  const testRing = async () => {
+    await scheduleTestRing(await getRepos(), id, 10);
+    setTestRingAt(Date.now() + 10_000);
+  };
 
   const data = useLiveQuery(
     ['task', 'plan', 'workspace', 'recording'],
@@ -139,6 +156,21 @@ export default function TaskScreen() {
                 <ReadAloudButton title={task.title} />
               </>
             )}
+            {canRing && task.status !== 'done' && task.status !== 'dropped' ? (
+              <View style={styles.testRing}>
+                <Button
+                  label={testRingAt ? 'Rings in about 10 s…' : 'Test ring in 10 s'}
+                  variant="ghost"
+                  disabled={!!testRingAt}
+                  onPress={() => void testRing()}
+                />
+                {testRingAt && scheduler.kind === 'in-app' ? (
+                  <Text variant="small" color="textMuted">
+                    Keep the app open: in Expo Go, rings only work while the app is on screen.
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         </Card>
 
@@ -254,6 +286,7 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', gap: Spacing.md },
   detailLabel: { width: 110 },
   notes: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.sm, marginTop: Spacing.xs },
+  testRing: { gap: Spacing.xs, alignItems: 'flex-start' },
   section: { gap: Spacing.sm },
   list: { gap: Spacing.sm },
   danger: { marginTop: Spacing.lg },

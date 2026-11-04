@@ -147,6 +147,9 @@ export function policyFor<P extends Pick<ReminderPolicy, 'workspaceId'>>(
 
 // ---------- Diff ----------
 
+/** stepIndex of a one-off "test ring" reminder, outside every ladder. */
+export const TEST_STEP = -1;
+
 export type ReminderDiff = {
   /** Ids of scheduled reminders that no longer match the plan. */
   cancel: string[];
@@ -157,6 +160,7 @@ export type ReminderDiff = {
  * Compares the plan with the reminders already waiting for this task.
  * Only future rows still 'scheduled' are touched: rows whose time has passed belong to the
  * alarm code now (they fire, or get logged as missed), and the planner never re-adds past steps.
+ * Test rings (stepIndex TEST_STEP) are not part of any ladder and are never touched.
  */
 export function diffReminders(
   existing: Pick<Reminder, 'id' | 'stepIndex' | 'channel' | 'fireAt' | 'status'>[],
@@ -166,7 +170,8 @@ export function diffReminders(
   const key = (r: { stepIndex: number; channel: string; fireAt: string }) =>
     `${r.stepIndex}|${r.channel}|${new Date(r.fireAt).getTime()}`;
   const live = existing.filter(
-    (r) => r.status === 'scheduled' && new Date(r.fireAt).getTime() > now.getTime(),
+    (r) =>
+      r.status === 'scheduled' && r.stepIndex !== TEST_STEP && new Date(r.fireAt).getTime() > now.getTime(),
   );
   const wanted = new Set(planned.map(key));
   const have = new Set(live.map(key));

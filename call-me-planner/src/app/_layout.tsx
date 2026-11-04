@@ -50,6 +50,10 @@ export default function RootLayout() {
         <Stack.Screen name="plan/edit" options={{ presentation: 'modal', title: 'Plan' }} />
         <Stack.Screen name="task/[id]" options={{ title: 'Task' }} />
         <Stack.Screen name="task/edit" options={{ presentation: 'modal', title: 'Task' }} />
+        <Stack.Screen
+          name="ring/[reminderId]"
+          options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
+        />
       </Stack>
       <UndoToast />
     </ThemeProvider>

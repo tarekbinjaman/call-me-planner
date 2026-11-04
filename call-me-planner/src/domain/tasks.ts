@@ -75,6 +75,8 @@ export type TaskPatch = Partial<
     | 'carryCount'
     | 'mustDo'
     | 'critical'
+    | 'snoozedUntil'
+    | 'snoozeCount'
   >
 >;
 
