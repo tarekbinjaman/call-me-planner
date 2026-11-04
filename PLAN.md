@@ -129,8 +129,8 @@ No account, no internet needed.
 - [x] **Review:** tasks done today and this week, by workspace, with a bar chart of done tasks per day (plain views; `victory-native` needs Skia, which is extra setup on web)
 
 ### 1.5 Domain logic (pure TypeScript, unit tested)
-- [ ] `rollover.ts`: move unfinished past tasks to today, `carry_count + 1`; safe to run twice
-- [ ] Run rollover on app open and when the date changes while the app is open
+- [x] `rollover.ts`: move unfinished past tasks to today, `carry_count + 1`; safe to run twice
+- [x] Run rollover on app open and when the date changes while the app is open (Today flags moved tasks as "Carried over")
 - [ ] Stale task prompt when `carry_count >= 3`: do today / break down / someday / drop
 - [ ] `capacity.ts`: planned minutes vs budget per workspace per day
 - [ ] `reminderPlanner.ts`: task + policy → list of reminder rows; recalculates on done, snooze, move or time change

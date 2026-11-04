@@ -46,9 +46,13 @@ export function TaskRow({ task, workspace, showDay = false, subtaskCount, now, r
   const warning =
     timing.kind === 'overdue'
       ? `Overdue · from ${timing.since}`
-      : timing.kind === 'late'
-        ? 'Time passed'
-        : null;
+      : timing.kind === 'carried'
+        ? timing.carried === 1
+          ? 'Carried over from an earlier day'
+          : `Carried over ${timing.carried} times`
+        : timing.kind === 'late'
+          ? 'Time passed'
+          : null;
 
   return (
     <View

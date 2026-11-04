@@ -112,6 +112,13 @@ describe('taskTiming', () => {
     expect(taskTiming(task({ scheduledDate: '2026-11-02' }), now)).toEqual({
       kind: 'overdue',
       since: 'Mon 2 Nov',
+      carried: 0,
+    });
+  });
+  it('flags tasks that rollover carried onto today', () => {
+    expect(taskTiming(task({ scheduledDate: '2026-11-04', carryCount: 2 }), now)).toEqual({
+      kind: 'carried',
+      carried: 2,
     });
   });
   it('flags a passed time today as late', () => {

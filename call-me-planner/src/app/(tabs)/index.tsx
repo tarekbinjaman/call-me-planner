@@ -40,7 +40,10 @@ export default function TodayScreen() {
   const done = data.data?.done ?? [];
   const groups = groupByWorkspace(open, workspaces);
   const total = totalCapacity(groups);
-  const overdue = open.filter((t) => taskTiming(t, now).kind === 'overdue').length;
+  const overdue = open.filter((t) => {
+    const kind = taskTiming(t, now).kind;
+    return kind === 'overdue' || kind === 'carried';
+  }).length;
   const dateLabel = format(parseLocalDate(today)!, 'EEEE d MMMM');
 
   return (

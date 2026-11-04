@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useDatabaseStore } from '@/stores/database-store';
+import { useRollover } from '@/stores/use-rollover';
 import { Colors } from '@/ui/theme';
 import { UndoToast } from '@/ui/undo-toast';
 
@@ -15,6 +16,8 @@ export default function RootLayout() {
   useEffect(() => {
     void openDatabase();
   }, [openDatabase]);
+
+  useRollover();
 
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme = {

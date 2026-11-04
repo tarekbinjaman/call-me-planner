@@ -82,10 +82,15 @@ export function describeCapacity(c: Capacity): string {
 
 // ---------- Overdue / late ----------
 
-export type Timing = { kind: 'overdue'; since: string } | { kind: 'late' } | { kind: 'ok' };
+export type Timing =
+  | { kind: 'overdue'; since: string; carried: number }
+  | { kind: 'carried'; carried: number }
+  | { kind: 'late' }
+  | { kind: 'ok' };
 
 /**
- * overdue = planned for an earlier day and still open (it rolled into today);
+ * overdue = planned for an earlier day and still open (rollover hasn't moved it yet);
+ * carried = rollover already moved it here from an earlier day (carryCount > 0);
  * late = has a time today that has already passed.
  */
 export function taskTiming(task: Task, now: Date): Timing {
@@ -94,8 +99,13 @@ export function taskTiming(task: Task, now: Date): Timing {
   const today = toLocalDate(now);
   if (task.scheduledDate && task.scheduledDate < today) {
     const d = parseLocalDate(task.scheduledDate);
-    return { kind: 'overdue', since: d ? format(d, 'EEE d MMM') : task.scheduledDate };
+    return {
+      kind: 'overdue',
+      since: d ? format(d, 'EEE d MMM') : task.scheduledDate,
+      carried: task.carryCount,
+    };
   }
+  if (task.carryCount > 0) return { kind: 'carried', carried: task.carryCount };
   if (task.dueAt && new Date(task.dueAt).getTime() < now.getTime()) return { kind: 'late' };
   return { kind: 'ok' };
 }

@@ -172,6 +172,13 @@ export function createRepositories(deps: RepoDeps) {
           orderBy: 'workspace_id, sort_order, created_at',
         });
       },
+      /** Open tasks (subtasks too) planned for a day before `date`: the ones rollover moves. */
+      beforeDay(date: string) {
+        return tasks.getAll({
+          where: "scheduled_date IS NOT NULL AND scheduled_date < ? AND status IN ('todo', 'doing')",
+          params: [date],
+        });
+      },
       /** Open top-level tasks with no workspace yet, newest first. */
       inbox() {
         return tasks.getAll({
